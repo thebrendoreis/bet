@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Caramelo Rio Racing - Ultra Graphics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Poppins:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --gold:#ffd23f;
+  --brazil-green:#009c3b;
+  --brazil-blue:#002776;
+  --ink:#0a0a0d;
+  --card:rgba(15,15,20,.75);
+}
+
+*{box-sizing:border-box;margin:0;padding:0;user-select:none;}
+
+html,body{
+  width:100%;height:100%;overflow:hidden;
+  background:var(--ink);
+  font-family:'Poppins',sans-serif;
+  color:#fff;
+}
+
+#gameCanvas{position:fixed;inset:0;width:100%;height:100%;}
+
+.hud{position:fixed;inset:0;z-index:10;pointer-events:none;}
+.interactive{pointer-events:auto;}
+
+.display{font-family:'Bebas Neue',sans-serif;letter-spacing:1px;}
+
+.fadeable{transition:opacity .4s ease, transform .4s ease;}
+.hidden-ui{opacity:0 !important;transform:translateY(15px);pointer-events:none !important;}
+
+/* ============ TOPBAR ============ */
+.topbar{
+  position:absolute;top:16px;left:16px;right:16px;height:68px;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 20px;
+  background:var(--card);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,210,63,.4);
+  border-radius:20px;
+  box-shadow:0 10px 40px rgba(0,0,0,.6), inset 0 2px 10px rgba(255,255,255,0.05);
+}
+
+.logo{display:flex;align-items:center;gap:14px;}
+
+.logo-icon{
+  width:48px;height:48px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, #ffe9b3, var(--gold) 60%, #c98a1e);
+  border:2px solid var(--gold);
+  box-shadow:0 0 20px rgba(255,210,63,.6);
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;
+}
+
+.logo-title{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:24px;letter-spacing:2px;line-height:1;
+  background:linear-gradient(90deg,var(--gold),#ff8a5c,#00d4ff);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.logo-sub{font-size:10px;letter-spacing:2px;color:#c9b58a;margin-top:2px;}
+
+.balance{text-align:right;}
+.balance small{display:block;font-size:9px;text-transform:uppercase;color:#c9b58a;letter-spacing:1px;}
+.balance strong{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--gold);letter-spacing:1px; text-shadow: 0 2px 8px rgba(255,210,63,0.3);}
+
+/* ============ RACE INFO ============ */
+.race-info{position:absolute;top:100px;left:50%;transform:translateX(-50%);text-align:center;}
+.race-info .round{font-size:12px;letter-spacing:4px;color:#e8d8b8;}
+.race-info h1{font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:3px;margin-top:2px;
+  text-shadow:0 4px 20px rgba(0,0,0,.8);color:var(--gold);}
+.race-info .status{
+  margin-top:6px;font-size:13px;color:#4dffa0;font-weight:700;
+  background:rgba(0,0,0,.6);padding:4px 16px;border-radius:12px;display:inline-block;
+  border: 1px solid rgba(77, 255, 160, 0.3);
+}
+
+/* ============ EVENT BANNER ============ */
+.event{
+  position:absolute;top:175px;left:50%;
+  transform:translate(-50%,-15px) scale(.85);opacity:0;
+  padding:10px 24px;background:linear-gradient(135deg,var(--brazil-green),var(--brazil-blue));
+  border:2px solid var(--gold);border-radius:26px;
+  font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:1px;
+  box-shadow:0 12px 35px rgba(0,0,0,.7);transition:.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);white-space:nowrap;
+}
+.event.show{opacity:1;transform:translate(-50%,0) scale(1);}
+
+/* ============ NARRATOR ============ */
+.narrator{
+  position:absolute;bottom:260px;left:50%;transform:translateX(-50%);
+  padding:8px 20px;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);
+  border:1px solid rgba(255,210,63,.4);border-radius:20px;
+  color:#ffe9b3;font-size:13px;font-weight:600;white-space:nowrap;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+}
+
+/* ============ DOG SELECTOR ============ */
+.selector{
+  position:absolute;left:50%;bottom:150px;transform:translateX(-50%);
+  width:min(960px,96vw);padding:12px;
+  background:var(--card);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,210,63,.3);border-radius:20px;
+  box-shadow:0 15px 50px rgba(0,0,0,.6), inset 0 2px 10px rgba(255,255,255,0.03);
+  display:grid;grid-template-columns:repeat(6,1fr);gap:10px;
+}
+
+.dog-card{
+  min-height:130px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  border-radius:16px;background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.1);cursor:pointer;transition:.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);padding:10px;
+  position: relative; overflow: hidden;
+}
+.dog-card::before {
+  content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,0.1), transparent); opacity: 0; transition: .2s;
+}
+.dog-card:hover{transform:translateY(-6px);border-color:rgba(255,210,63,0.5); background:rgba(255,255,255,.07);}
+.dog-card:hover::before { opacity: 1; }
+.dog-card.selected{
+  background:linear-gradient(180deg,rgba(0,156,59,.3),rgba(255,210,63,.2));
+  border:2px solid var(--gold);box-shadow:0 10px 30px rgba(255,210,63,.3), 0 0 0 1px rgba(255,210,63,.15) inset;
+  transform:translateY(-8px);
+  animation: cardPulse 2.4s ease-in-out infinite;
+}
+@keyframes cardPulse{
+  0%,100%{ box-shadow:0 10px 30px rgba(255,210,63,.3); }
+  50%{ box-shadow:0 10px 38px rgba(255,210,63,.55); }
+}
+
+.dog-avatar-canvas{
+  width:64px;height:64px;
+  border-radius:50%;
+  border:3px solid var(--gold);
+  box-shadow:0 6px 16px rgba(0,0,0,.6);
+  background:radial-gradient(circle at 50% 30%, #305f69, #0d2226 80%);
+}
+
+.dog-name{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.5px;text-align:center; text-shadow: 0 1px 3px rgba(0,0,0,0.8);}
+.odds{font-family:'Bebas Neue',sans-serif;color:var(--gold);font-size:16px;letter-spacing:1px; background: rgba(0,0,0,0.4); padding: 0 8px; border-radius: 6px;}
+.factor{font-size:9px;color:#b8ab8f;text-align:center;line-height:1.2; margin-top: 2px;}
+
+/* ============ BET PANEL ============ */
+.bottom{
+  position:absolute;left:50%;bottom:16px;transform:translateX(-50%);
+  width:min(960px,96vw);display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:12px;
+  padding:14px;background:var(--card);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,210,63,.3);border-radius:20px;box-shadow:0 15px 50px rgba(0,0,0,.7);
+}
+
+.label{font-size:10px;color:#c9b58a;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;}
+.value{
+  height:44px;display:flex;align-items:center;justify-content:center;border-radius:12px;
+  background:rgba(0,0,0,0.6);border:1px solid rgba(255,210,63,.4);color:var(--gold);
+  font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;
+  box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+}
+
+.quick{display:flex;gap:6px;margin-top:6px;}
+.quick button{
+  flex:1;border:1px solid rgba(255,210,63,.3);background:linear-gradient(180deg, #2a2218, #171310);color:#ffd54f;
+  padding:8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;transition:.2s;
+}
+.quick button:hover{background:linear-gradient(180deg, #423423, #2a2218); transform: translateY(-2px);}
+
+.start{
+  width:100%;height:100%; min-height: 70px; border:none;border-radius:14px;
+  background:linear-gradient(135deg,var(--brazil-green), #00c44a, var(--gold));
+  background-size: 200% 200%;
+  animation: bgShift 3s ease infinite;
+  color:#041408;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;
+  cursor:pointer;box-shadow:0 10px 30px rgba(0,156,59,.5);transition:.2s;
+  text-shadow: 0 1px 2px rgba(255,255,255,0.4);
+}
+@keyframes bgShift { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+.start:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 15px 40px rgba(0,156,59,.7);}
+.start:disabled{background:#222;color:#666;box-shadow:none;cursor:not-allowed;transform:none; animation: none;}
+
+/* ============ RESPONSIVE ============ */
+@media(max-width:750px){
+  .selector{grid-template-columns:repeat(3,1fr);bottom:160px; padding: 8px; gap: 6px;}
+  .dog-card{min-height:115px; padding: 6px;}
+  .dog-avatar-canvas{width:48px;height:48px;}
+  .dog-name{font-size: 13px;}
+  .bottom{grid-template-columns:1fr 1fr;}
+  .start{height:60px;}
+  .start-box{grid-column:1/-1;}
+  .narrator{bottom:320px;max-width:92%;text-align:center;white-space:normal;}
+  .race-info h1{font-size:28px;}
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="gameCanvas"></canvas>
+
+<div class="hud">
+<header class="topbar interactive fadeable" id="topbar">
+  <div class="logo">
+    <div class="logo-icon">🐾</div>
+    <div>
+      <div class="logo-title">CARAMELO RIO</div>
+      <div class="logo-sub">DOG RACING • COPACABANA</div>
+    </div>
+  </div>
+  <div class="balance">
+    <small>Saldo (fictício)</small>
+    <strong id="balance">R$ 1.000,00</strong>
+  </div>
+</header>
+
+<div class="race-info fadeable" id="raceInfo">
+  <div class="round display">CORRIDA #<span id="round">001</span></div>
+  <h1>PISTA DE COPACABANA</h1>
+  <div class="status" id="status">ESCOLHA SEU CACHORRO</div>
+</div>
+
+<div class="event" id="event">EVENTO ESPECIAL!</div>
+<div class="narrator" id="narrator">Aguardando a largada...</div>
+<div class="selector interactive fadeable" id="selector"></div>
+
+<div class="bottom interactive fadeable" id="betPanel">
+  <div>
+    <div class="label">Sua aposta</div>
+    <div class="value" id="betValue">R$ 10,00</div>
+    <div class="quick">
+      <button onclick="setBet(10)">R$10</button>
+      <button onclick="setBet(50)">R$50</button>
+      <button onclick="setBet(100)">R$100</button>
+      <button onclick="setBet(200)">R$200</button>
+    </div>
+  </div>
+  <div>
+    <div class="label">Retorno potencial</div>
+    <div class="value" id="returnValue">R$ 24,00</div>
+    <div class="quick"><button onclick="setMax()">MAX</button></div>
+  </div>
+  <div class="start-box">
+    <button class="start" id="startButton" onclick="startRace()">INICIAR CORRIDA</button>
+  </div>
+</div>
+</div>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d", { alpha: false }); // Otimização severa pro navegador
+let W, H, DPR;
+
+function resize(){
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.width = W * DPR;
+  canvas.height = H * DPR;
+  canvas.style.width = W + "px";
+  canvas.style.height = H + "px";
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+window.addEventListener("resize", resize);
+resize();
+
+function shade(hex, amt){
+  const n = parseInt(hex.slice(1),16);
+  let r = (n>>16) + amt, g = (n>>8 & 0xff) + amt, b = (n & 0xff) + amt;
+  r = Math.max(0,Math.min(255,r)); g = Math.max(0,Math.min(255,g)); b = Math.max(0,Math.min(255,b));
+  return "#" + (0x1000000 + r*0x10000 + g*0x100 + b).toString(16).slice(1);
+}
+
+/* =========================================================
+   CACHORROS - Modelos Vetoriais Aprimorados
+========================================================= */
+const DOGS = [
+  { id:"caramelo", name:"Caramelo 67", odd:2.4, speed:1.04, trait:"Chegou junto e misturado",
+    cfg:{ body:"#c98a4b", belly:"#f0dcb0", ear:"floppy", tail:"curl", snout:"#f0dcb0", snoutLen:8, size:1.0 } },
+  { id:"doge", name:"Doge Tropical", odd:3.1, speed:1.00, trait:"Farmando aura na pista",
+    cfg:{ body:"#e0b25a", belly:"#fff6e0", ear:"pointy", tail:"shiba", snout:"#fff6e0", snoutLen:7, size:0.95 } },
+  { id:"vira-lata", name:"Vira-Lata Fiel", odd:3.6, speed:1.02, trait:"Raça mais fiel do Brasil",
+    cfg:{ body:"#8a5a2b", belly:"#d9b98a", ear:"floppy", tail:"wag", snout:"#d9b98a", snoutLen:8, size:1.02 } },
+  { id:"pug", name:"Pug Buguelo", odd:4.2, speed:0.95, trait:"Ronca até correndo",
+    cfg:{ body:"#c9a877", belly:"#e9d9b8", ear:"folded", tail:"curl", snout:"#3a2a20", snoutLen:4, size:0.9, wrinkles:true } },
+  { id:"bidu", name:"Bidu Sortudo", odd:5.0, speed:0.97, trait:"Azarão do bairro",
+    cfg:{ body:"#c9975f", belly:"#f0e0c0", ear:"floppy", tail:"wag", snout:"#f0e0c0", snoutLen:8, size:1.0, spots:"#3a2a20" } },
+  { id:"husky", name:"Trovão Gelado", odd:6.0, speed:0.94, trait:"Late mais que corre",
+    cfg:{ body:"#d8dade", belly:"#ffffff", ear:"pointy", tail:"shiba", snout:"#ffffff", snoutLen:7, size:1.0, mask:"#3a3f47" } }
+];
+
+function drawDogModel(c, x, groundY, scale, phase, isRunning = false){
+  const cfg = c.cfg;
+  const s = scale * cfg.size;
+  const dark = shade(cfg.body, -35);
+  const darker = shade(cfg.body, -55);
+  
+  // Bobbing: O cachorro "pula" de leve enquanto corre (dá vida ao modelo)
+  const bob = isRunning ? Math.abs(Math.sin(phase)) * 4 : 0;
+
+  c.ctx.save();
+  c.ctx.translate(x, groundY - bob);
+  c.ctx.scale(s, s);
+
+  const swingA = Math.sin(phase) * 16;
+  const swingB = Math.sin(phase + Math.PI) * 16;
+
+  // Sombra de contato entre as patas (dá peso ao modelo)
+  c.ctx.fillStyle = "rgba(0,0,0,0.18)";
+  c.ctx.beginPath();
+  c.ctx.ellipse(0, 2, 26, 5, 0, 0, Math.PI*2);
+  c.ctx.fill();
+
+  // Pernas com leve gradiente de volume
+  c.ctx.strokeStyle = dark;
+  c.ctx.lineWidth = 5.5;
+  c.ctx.lineCap = "round";
+  c.ctx.lineJoin = "round";
+
+  function leg(bx, by, swing, front){
+    c.ctx.strokeStyle = front ? dark : darker;
+    c.ctx.beginPath();
+    c.ctx.moveTo(bx, by);
+    c.ctx.lineTo(bx + swing*0.4, by + 13 + (bob*0.5)); // A perna estica quando ele sobe
+    c.ctx.lineTo(bx + swing, by + 22 + bob);
+    c.ctx.stroke();
+    // Pata (pequeno reforço na ponta)
+    c.ctx.fillStyle = darker;
+    c.ctx.beginPath();
+    c.ctx.ellipse(bx + swing, by + 22 + bob, 3.2, 2, 0, 0, Math.PI*2);
+    c.ctx.fill();
+  }
+  
+  leg(-13, -8, swingB, false);
+  leg(-5, -9, swingA, false);
+  leg(9, -9, swingB, true);
+  leg(17, -8, swingA, true);
+
+  // Rabo
+  c.ctx.strokeStyle = cfg.body;
+  c.ctx.lineWidth = 6.5;
+  c.ctx.beginPath();
+  if(cfg.tail === "shiba"){
+    c.ctx.moveTo(-20,-20);
+    c.ctx.quadraticCurveTo(-32,-30,-24,-40);
+    c.ctx.quadraticCurveTo(-18,-44,-14,-36);
+  } else if(cfg.tail === "curl"){
+    const w = Math.sin(phase*1.3)*4;
+    c.ctx.moveTo(-19,-18);
+    c.ctx.quadraticCurveTo(-30+w,-24,-26+w,-34);
+  } else {
+    const w = Math.sin(phase*2.5)*12;
+    c.ctx.moveTo(-19,-16);
+    c.ctx.quadraticCurveTo(-30,-14+w,-34,-6+w);
+  }
+  c.ctx.stroke();
+
+  // Corpo com gradiente radial para volume (luz vindo de cima-direita, tipo pôr-do-sol)
+  const bodyGrad = c.ctx.createRadialGradient(6,-30,4, 0,-22,30);
+  bodyGrad.addColorStop(0, shade(cfg.body, 45));
+  bodyGrad.addColorStop(0.55, shade(cfg.body, 8));
+  bodyGrad.addColorStop(1, shade(cfg.body, -22));
+  c.ctx.fillStyle = bodyGrad;
+  c.ctx.beginPath();
+  c.ctx.ellipse(0, -22, 24, 15, 0, 0, Math.PI*2);
+  c.ctx.fill();
+
+  // Textura sutil de pelagem (riscos curtos)
+  c.ctx.strokeStyle = "rgba(0,0,0,0.08)";
+  c.ctx.lineWidth = 1;
+  for(let i=-1;i<=1;i++){
+    c.ctx.beginPath();
+    c.ctx.moveTo(-14+i*8, -30);
+    c.ctx.lineTo(-10+i*8, -14);
+    c.ctx.stroke();
+  }
+
+  // Barriga com leve sombra de contato
+  const bellyGrad = c.ctx.createLinearGradient(0,-19,0,-7);
+  bellyGrad.addColorStop(0, shade(cfg.belly,-10));
+  bellyGrad.addColorStop(1, cfg.belly);
+  c.ctx.fillStyle = bellyGrad;
+  c.ctx.beginPath();
+  c.ctx.ellipse(-2, -13, 16, 7, 0, 0, Math.PI*2);
+  c.ctx.fill();
+
+  // Manchas
+  if(cfg.spots){
+    c.ctx.fillStyle = cfg.spots;
+    c.ctx.beginPath(); c.ctx.ellipse(-8,-26,6,4,0.3,0,Math.PI*2); c.ctx.fill();
+    c.ctx.beginPath(); c.ctx.ellipse(6,-30,5,3.5,-0.2,0,Math.PI*2); c.ctx.fill();
+  }
+
+  // Rim light no lombo (contorno iluminado pelo sol poente)
+  c.ctx.strokeStyle = "rgba(255,220,160,0.5)";
+  c.ctx.lineWidth = 2;
+  c.ctx.beginPath();
+  c.ctx.ellipse(2, -34, 22, 9, 0, Math.PI*1.15, Math.PI*1.85);
+  c.ctx.stroke();
+
+  // Cabeça
+  const headGrad = c.ctx.createRadialGradient(26,-36,2, 23,-31,15);
+  headGrad.addColorStop(0, shade(cfg.body, 45));
+  headGrad.addColorStop(0.6, shade(cfg.body, 5));
+  headGrad.addColorStop(1, shade(cfg.body, -20));
+  c.ctx.fillStyle = headGrad;
+  c.ctx.beginPath();
+  c.ctx.arc(23, -31, 13, 0, Math.PI*2);
+  c.ctx.fill();
+
+  if(cfg.mask){
+    c.ctx.fillStyle = cfg.mask;
+    c.ctx.beginPath(); c.ctx.ellipse(24,-33,9,7,0,0,Math.PI*2); c.ctx.fill();
+    c.ctx.fillStyle = cfg.belly;
+    c.ctx.beginPath(); c.ctx.ellipse(24,-30,6,4.5,0,0,Math.PI*2); c.ctx.fill();
+  }
+
+  if(cfg.wrinkles){
+    c.ctx.strokeStyle = dark;
+    c.ctx.lineWidth = 1.4;
+    for(let i=0;i<3;i++){
+      c.ctx.beginPath(); c.ctx.arc(26, -35+i*3, 5-i, Math.PI*0.15, Math.PI*0.85); c.ctx.stroke();
+    }
+  }
+
+  // Focinho
+  c.ctx.fillStyle = cfg.snout;
+  c.ctx.beginPath();
+  c.ctx.ellipse(23 + cfg.snoutLen*0.7, -27, cfg.snoutLen, 6, 0, 0, Math.PI*2);
+  c.ctx.fill();
+
+  // Nariz
+  c.ctx.fillStyle = "#150e0a";
+  c.ctx.beginPath();
+  c.ctx.arc(23 + cfg.snoutLen*1.35, -27, 2.5, 0, Math.PI*2);
+  c.ctx.fill();
+  // Brilho do Nariz
+  c.ctx.fillStyle = "rgba(255,255,255,0.6)";
+  c.ctx.beginPath();
+  c.ctx.arc(23 + cfg.snoutLen*1.35 - 1, -28, 1, 0, Math.PI*2);
+  c.ctx.fill();
+
+  // Olho com brilho duplo (mais vivo)
+  c.ctx.fillStyle = "#150e0a";
+  c.ctx.beginPath(); c.ctx.arc(27, -34, 2.5, 0, Math.PI*2); c.ctx.fill();
+  c.ctx.fillStyle = "#fff";
+  c.ctx.beginPath(); c.ctx.arc(27.8, -34.8, 1, 0, Math.PI*2); c.ctx.fill();
+  c.ctx.fillStyle = "rgba(255,255,255,0.5)";
+  c.ctx.beginPath(); c.ctx.arc(26.2, -33.2, 0.6, 0, Math.PI*2); c.ctx.fill();
+
+  // Orelha
+  c.ctx.fillStyle = dark;
+  if(cfg.ear === "pointy"){
+    c.ctx.beginPath(); c.ctx.moveTo(16,-41); c.ctx.lineTo(20,-56); c.ctx.lineTo(26,-42); c.ctx.closePath(); c.ctx.fill();
+  } else if(cfg.ear === "floppy"){
+    c.ctx.beginPath(); c.ctx.ellipse(16,-32,5.5,13,0.4,0,Math.PI*2); c.ctx.fill();
+  } else { 
+    c.ctx.beginPath(); c.ctx.ellipse(16,-38,5,7,0.5,0,Math.PI*2); c.ctx.fill();
+  }
+
+  c.ctx.restore();
+}
+
+function renderDogIcon(dogCfg, canvasEl){
+  const c2 = canvasEl.getContext("2d", { alpha: false });
+  const size = canvasEl.width;
+  c2.fillStyle = "#0d2226"; 
+  c2.fillRect(0,0,size,size);
+  
+  const g = c2.createRadialGradient(size/2, size*0.3, 0, size/2, size*0.3, size*0.7);
+  g.addColorStop(0, "#305f69");
+  g.addColorStop(1, "#0d2226");
+  c2.fillStyle = g;
+  c2.fillRect(0,0,size,size);
+
+  drawDogModel({ ctx:c2, cfg:dogCfg }, size*0.38, size*0.72, size/62, 0.6, false);
+}
+
+/* =========================================================
+   VARIÁVEIS DE ESTADO
+========================================================= */
+let balance = 1000;
+let bet = 10;
+let selected = DOGS[0];
+let state = "waiting";
+let raceNumber = 1;
+let racers = [];
+let nextEvent = 2;
+let particles = [];
+let confetti = [];
+let obstacles = [];
+let shake = 0;
+const TRACK_LEN = 3000;
+let currentCamera = 0; 
+let time = 0; // Para animações contínuas (mar, nuvens)
+
+/* =========================================================
+   TORCIDA
+========================================================= */
+const CROWD_CHANTS = [
+  "É 67!!","TÁ FARMANDO AURA","BORA CACHORRO","CRONICAMENTE ONLINE",
+  "TANKOU FIRME","VÉIO DO CÉU","JURO QUE GANHO","MITO DEMAIS",
+  "SURTEI AGORA","SEGURA AS PONTA","BOTA FÉ","É NÓIS","🔥🔥🔥",
+  "TAMO JUNTO","RIZZ DE CACHORRO","BRAINROT TOTAL"
+];
+
+let crowd = [];
+function buildCrowd(rows){
+  crowd = [];
+  const perRow = 38;
+  for(let row=0; row<rows; row++){
+    for(let i=0;i<perRow;i++){
+      crowd.push({
+        x: (i + Math.random()*0.6) / perRow,
+        row,
+        phase: Math.random()*Math.PI*2,
+        speed: 1.5 + Math.random()*2,
+        hue: [46, 132, 195, 18, 300, 350][Math.floor(Math.random()*6)],
+        hasFlag: Math.random() < 0.25,
+        chantTimer: Math.random()*5,
+        chant: null
+      });
+    }
+  }
+}
+buildCrowd(3);
+
+/* =========================================================
+   UI
+========================================================= */
+function money(v){ return "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits:2, maximumFractionDigits:2 }); }
+
+function updateUI(){
+  document.getElementById("balance").textContent = money(balance);
+  document.getElementById("betValue").textContent = money(bet);
+  document.getElementById("returnValue").textContent = money(bet * selected.odd);
+}
+
+function buildDogs(){
+  const container = document.getElementById("selector");
+  container.innerHTML = "";
+  DOGS.forEach(dog => {
+    const card = document.createElement("div");
+    card.className = "dog-card " + (dog.id === selected.id ? "selected" : "");
+    card.innerHTML = `
+      <canvas class="dog-avatar-canvas" width="68" height="68"></canvas>
+      <div class="dog-name display">${dog.name}</div>
+      <div class="odds display">${dog.odd.toFixed(2)}x</div>
+      <div class="factor">${dog.trait}</div>
+    `;
+    card.onclick = () => { if(state !== "waiting") return; selected = dog; buildDogs(); updateUI(); };
+    container.appendChild(card);
+    renderDogIcon(dog.cfg, card.querySelector("canvas"));
+  });
+}
+
+function setBet(v){ if(state !== "waiting") return; bet = Math.min(Math.max(1, v), balance); updateUI(); }
+function setMax(){ setBet(balance); }
+function narration(text){ document.getElementById("narrator").textContent = text; }
+function eventMessage(text){
+  const el = document.getElementById("event");
+  el.textContent = text;
+  el.classList.add("show");
+  setTimeout(() => el.classList.remove("show"), 2200);
+}
+
+function setHudVisible(visible){
+  ["topbar","raceInfo","selector","betPanel"].forEach(id => {
+    const el = document.getElementById(id);
+    if(visible) el.classList.remove("hidden-ui");
+    else el.classList.add("hidden-ui");
+  });
+}
+
+/* =========================================================
+   CORRIDA E FÍSICA
+========================================================= */
+function startRace(){
+  if(state !== "waiting" || balance < bet) return;
+  balance -= bet;
+  updateUI();
+
+  state = "racing";
+  nextEvent = 1.2;
+
+  document.getElementById("startButton").disabled = true;
+  document.getElementById("startButton").textContent = "CORRENDO...";
+  document.getElementById("status").textContent = "CORRIDA EM ANDAMENTO";
+  document.getElementById("round").textContent = String(raceNumber).padStart(3, "0");
+  raceNumber++;
+
+  racers = DOGS.map((dog, index) => ({
+    ...dog, distance:0, lane:index,
+    speed: dog.speed * (0.90 + Math.random()*0.22),
+    energy: 0.90 + Math.random()*0.25,
+    stumble:0, boost:0, phase:Math.random()*10
+  }));
+
+  createObstacles();
+  narration("3... 2... 1... ATENÇÃO PARA A LARGADA!");
+  setTimeout(() => setHudVisible(false), 550);
+}
+
+function createObstacles(){
+  obstacles = [];
+  let x = 500;
+  while(x < TRACK_LEN){
+    x += 200 + Math.random()*300;
+    obstacles.push({ x, lane: Math.floor(Math.random()*DOGS.length), type: ["Cone","Poça","Osso","Canga"][Math.floor(Math.random()*4)] });
+  }
+}
+
+function randomEvent(){
+  if(racers.length === 0) return;
+  const events = [
+    { text:"É 67, É 67!!", run(){ const d=racers[Math.floor(Math.random()*racers.length)]; d.boost+=100; narration(d.name+" ouviu o grito e disparou!"); } },
+    { text:"OSSO JOGADO NA PISTA!", run(){ const d=racers[Math.floor(Math.random()*racers.length)]; d.boost+=90; narration(d.name+" correu pro osso e ganhou fôlego!"); } },
+    { text:"BLOCO DE CARNAVAL PASSANDO!", run(){ racers.forEach(d=>{ if(Math.random()<0.5) d.stumble+=30; }); narration("O bloco atrapalhou a pista!"); shake=0.3; } },
+    { text:"MODO CARAMELO ATIVADO!", run(){ const d=racers.find(x=>x.id==="caramelo"); if(d) d.boost+=100; } },
+    { text:"ONDA DE COPACABANA!", run(){ const d=racers[Math.floor(Math.random()*racers.length)]; d.boost+=75; narration(d.name+" surfou na onda de energia!"); } },
+    { text:"FARMOU AURA DEMAIS!", run(){ const d=racers[Math.floor(Math.random()*racers.length)]; d.boost+=85; narration(d.name+" tá tankando essa reta!"); } }
+  ];
+  const e = events[Math.floor(Math.random()*events.length)];
+  eventMessage(e.text);
+  e.run();
+}
+
+function getTargetCamera(){
+  if(racers.length === 0) return 0;
+  const leader = racers.reduce((a,b)=> a.distance > b.distance ? a : b);
+  return Math.max(0, Math.min(TRACK_LEN - W*0.5, leader.distance - W*0.35));
+}
+
+function update(dt){
+  time += dt;
+  const targetCam = getTargetCamera();
+  currentCamera += (targetCam - currentCamera) * 5 * dt; // Lerp super suave
+
+  crowd.forEach(c => {
+    c.chantTimer -= dt;
+    if(c.chantTimer <= 0){
+      c.chant = Math.random() < 0.45 ? CROWD_CHANTS[Math.floor(Math.random()*CROWD_CHANTS.length)] : null;
+      c.chantTimer = 3 + Math.random()*4;
+    }
+  });
+
+  if(shake > 0) shake -= dt*3;
+
+  if(state !== "racing") return;
+  
+  nextEvent -= dt;
+  if(nextEvent <= 0){
+    if(Math.random() < 0.7) randomEvent();
+    nextEvent = 1.5 + Math.random()*2.5;
+  }
+
+  racers.forEach(r => {
+    if(r.stumble > 0) r.stumble -= 120*dt;
+    if(r.boost > 0){ r.boost -= 50*dt; shake = Math.max(shake, 0.2); }
+
+    let vel = r.speed * (0.88 + Math.random()*0.26) * r.energy;
+
+    obstacles.forEach(ob => {
+      const dist = ob.x - r.distance;
+      if(dist > 0 && dist < 45 && ob.lane === r.lane){
+        if(Math.random() < 0.5) { r.stumble += 40; createDustExplosion(ob.x - currentCamera, r.lane); } 
+        else { r.boost += 25; }
+      }
+    });
+
+    vel -= r.stumble*0.015;
+    vel += r.boost*0.012;
+    vel = Math.max(0.1, vel);
+
+    r.distance += vel*120*dt;
+    r.phase += dt*12*vel;
+
+    // Poeira constante baseada na velocidade
+    if(vel > 0.5 && Math.random() < vel*dt*4){
+      particles.push({
+        x: r.distance - currentCamera - 10 - Math.random()*15, 
+        y: (H*0.53 + H*0.14 + 50) + 38 + r.lane*66,
+        vx: -40 - Math.random()*60, 
+        vy: -10 - Math.random()*20,
+        life: 0.5 + Math.random()*0.4,
+        maxLife: 0.9,
+        size: 4 + Math.random()*6,
+        color: `rgba(200, 180, 150, ` // Cor de areia/poeira
+      });
+    }
+
+    // Faíscas douradas quando em boost - reforça o efeito de energia
+    if(r.boost > 0 && Math.random() < dt*10){
+      particles.push({
+        x: r.distance - currentCamera - 15 - Math.random()*10,
+        y: (H*0.53 + H*0.14 + 50) + 38 + r.lane*66 - 10 - Math.random()*15,
+        vx: -30 - Math.random()*40,
+        vy: -30 - Math.random()*30,
+        life: 0.35 + Math.random()*0.25,
+        maxLife: 0.6,
+        size: 2 + Math.random()*2.5,
+        color: `rgba(255, 210, 90, `
+      });
+    }
+  });
+
+  const finished = racers.find(r => r.distance >= TRACK_LEN);
+  if(finished) finishRace(finished);
+}
+
+function createDustExplosion(x, lane){
+  const y = (H*0.53 + H*0.14 + 50) + 38 + lane*66;
+  for(let i=0; i<8; i++){
+    particles.push({
+      x: x + (Math.random()-0.5)*20, y: y + (Math.random()-0.5)*10,
+      vx: (Math.random()-0.5)*100, vy: -20 - Math.random()*50,
+      life: 0.4 + Math.random()*0.3, maxLife: 0.7, size: 6 + Math.random()*8,
+      color: `rgba(220, 200, 170, `
+    });
+  }
+}
+
+function finishRace(win){
+  state = "finished";
+  const won = win.id === selected.id;
+
+  if(won){
+    const prize = bet * selected.odd;
+    balance += prize;
+    eventMessage("VITÓRIA DO " + win.name.toUpperCase() + "! +" + money(prize));
+    narration("GREEN! O " + win.name + " cruzou a linha em primeiro!");
+    burstConfetti(W/2, H*0.4);
+  } else {
+    eventMessage(win.name.toUpperCase() + " FOI O CAMPEÃO!");
+    narration(win.name + " venceu! Tente na próxima.");
+  }
+
+  updateUI();
+  setHudVisible(true);
+
+  setTimeout(() => {
+    state = "waiting";
+    document.getElementById("startButton").disabled = false;
+    document.getElementById("startButton").textContent = "INICIAR CORRIDA";
+    document.getElementById("status").textContent = "ESCOLHA SEU CACHORRO";
+    narration("Nova corrida pronta. Faça a sua aposta!");
+  }, 3500);
+}
+
+function burstConfetti(x,y){
+  const colors = ["#009c3b","#ffdf00","#002776","#ff8a5c","#ffffff", "#00d4ff"];
+  for(let i=0;i<150;i++){
+    confetti.push({
+      x, y,
+      vx:(Math.random()-0.5)*500,
+      vy:-300-Math.random()*400,
+      g: 600+Math.random()*300,
+      life:2+Math.random()*1,
+      rot:Math.random()*Math.PI*2,
+      vr:(Math.random()-0.5)*15,
+      size:6+Math.random()*8,
+      shape: Math.random() < 0.4 ? "circle" : (Math.random() < 0.5 ? "ribbon" : "rect"),
+      color: colors[Math.floor(Math.random()*colors.length)]
+    });
+  }
+}
+
+/* =========================================================
+   RENDERIZAÇÃO OTIMIZADA (SEM SHADOWBLUR)
+========================================================= */
+let stars = null;
+function drawSky(camera){
+  // Gradiente de Fim de Tarde Carioca (mais rico, com passo extra de tom quente)
+  const sky = ctx.createLinearGradient(0,0,0,H*0.6);
+  sky.addColorStop(0, "#12153c");
+  sky.addColorStop(0.28, "#3a2361");
+  sky.addColorStop(0.5, "#8b3568");
+  sky.addColorStop(0.72, "#e85d41");
+  sky.addColorStop(0.88, "#ff9c3d");
+  sky.addColorStop(1, "#ffd766");
+  ctx.fillStyle = sky;
+  ctx.fillRect(0,0,W,H*0.55);
+
+  // Estrelas fracas no topo do céu (dá profundidade ao crepúsculo)
+  if(!stars){
+    stars = [];
+    for(let i=0;i<70;i++){
+      stars.push({ x:Math.random(), y:Math.random()*0.35, r:Math.random()*1.4+0.3, tw:Math.random()*Math.PI*2 });
+    }
+  }
+  stars.forEach(st=>{
+    const a = 0.25 + Math.abs(Math.sin(time*1.4 + st.tw))*0.45;
+    ctx.fillStyle = `rgba(255,255,255,${a.toFixed(2)})`;
+    ctx.beginPath();
+    ctx.arc(st.x*W, st.y*H*0.55, st.r, 0, Math.PI*2);
+    ctx.fill();
+  });
+
+  const sunX = W*0.75, sunY = H*0.35, sunR = 55;
+  
+  // Raios de Sol (Polígonos super rápidos)
+  ctx.save();
+  ctx.translate(sunX, sunY);
+  ctx.rotate(time * 0.1);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+  for(let i=0; i<12; i++){
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.lineTo(800, -50);
+    ctx.lineTo(800, 50);
+    ctx.fill();
+    ctx.rotate((Math.PI*2)/12);
+  }
+  ctx.restore();
+
+  // Sol com múltiplas camadas de glow (halo largo + halo médio + núcleo)
+  const glowOuter = ctx.createRadialGradient(sunX,sunY,0,sunX,sunY,sunR*5.5);
+  glowOuter.addColorStop(0, "rgba(255,180,90,.35)");
+  glowOuter.addColorStop(1, "rgba(255,180,90,0)");
+  ctx.fillStyle = glowOuter;
+  ctx.beginPath(); ctx.arc(sunX,sunY,sunR*5.5,0,Math.PI*2); ctx.fill();
+
+  const glow = ctx.createRadialGradient(sunX,sunY,0,sunX,sunY,sunR*3.2);
+  glow.addColorStop(0, "rgba(255,235,160,.9)");
+  glow.addColorStop(1, "rgba(255,230,150,0)");
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(sunX,sunY,sunR*3.2,0,Math.PI*2); ctx.fill();
+  
+  const sunCore = ctx.createRadialGradient(sunX-10,sunY-10,2,sunX,sunY,sunR);
+  sunCore.addColorStop(0, "#fffef2");
+  sunCore.addColorStop(0.7, "#fff2c4");
+  sunCore.addColorStop(1, "#ffdf8a");
+  ctx.fillStyle = sunCore;
+  ctx.beginPath(); ctx.arc(sunX,sunY,sunR,0,Math.PI*2); ctx.fill();
+
+  const cloudOff = (camera*0.02) % (W+300);
+  drawCloud(W*0.2 - cloudOff, H*0.15, 1.2);
+  drawCloud(W*0.2 - cloudOff + W + 300, H*0.15, 1.2);
+  drawCloud(W*0.6 - (camera*0.04)% (W+400), H*0.1, 0.8);
+  drawCloud(W*0.6 - (camera*0.04)% (W+400) + W + 400, H*0.1, 0.8);
+  drawCloud(W*0.42 - (camera*0.03)% (W+350), H*0.24, 0.55);
+  drawCloud(W*0.42 - (camera*0.03)% (W+350) + W + 350, H*0.24, 0.55);
+
+  const kx = (W*0.8 - camera*0.15) % (W+250);
+  drawHangGlider(kx, H*0.22);
+
+  // Neblina atmosférica suave logo acima das montanhas (dá sensação de profundidade)
+  const haze = ctx.createLinearGradient(0, H*0.42, 0, H*0.56);
+  haze.addColorStop(0, "rgba(255,190,110,0)");
+  haze.addColorStop(1, "rgba(255,200,140,0.25)");
+  ctx.fillStyle = haze;
+  ctx.fillRect(0, H*0.42, W, H*0.14);
+}
+
+function drawCloud(cx, cy, scale){
+  const g = ctx.createLinearGradient(cx, cy-16*scale, cx, cy+16*scale);
+  g.addColorStop(0, "rgba(255,235,210,.45)");
+  g.addColorStop(1, "rgba(255,180,150,.25)");
+  ctx.fillStyle = g; // Nuvens tingidas pelo pôr do sol
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, 38*scale, 16*scale, 0, 0, Math.PI*2);
+  ctx.ellipse(cx+24*scale, cy+5*scale, 24*scale, 12*scale, 0, 0, Math.PI*2);
+  ctx.ellipse(cx-24*scale, cy+5*scale, 22*scale, 11*scale, 0, 0, Math.PI*2);
+  ctx.fill();
+}
+
+function drawHangGlider(x,y){
+  ctx.strokeStyle = "rgba(20,14,28,.6)";
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x-18,y+5); ctx.lineTo(x,y-7); ctx.lineTo(x+18,y+5); ctx.stroke();
+  ctx.fillStyle = "rgba(255,100,60,.8)";
+  ctx.beginPath(); ctx.moveTo(x-18,y+5); ctx.lineTo(x,y-7); ctx.lineTo(x+18,y+5); ctx.closePath(); ctx.fill();
+}
+
+function drawMountains(camera){
+  const px1 = -((camera*0.06) % (W+400));
+  drawSugarloaf(px1 + W*0.15, H*0.53);
+  drawSugarloaf(px1 + W*0.15 + (W+400), H*0.53);
+
+  const px2 = -((camera*0.09) % (W+500));
+  drawCorcovado(px2 + W*0.65, H*0.53);
+  drawCorcovado(px2 + W*0.65 + (W+500), H*0.53);
+}
+
+function drawSugarloaf(cx, baseY){
+  const g = ctx.createLinearGradient(cx-90,baseY-210,cx+80,baseY);
+  g.addColorStop(0, "rgba(60,35,70,.8)");
+  g.addColorStop(1, "rgba(25,18,35,.9)");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(cx-100, baseY);
+  ctx.quadraticCurveTo(cx-80, baseY-160, cx-10, baseY-210);
+  ctx.quadraticCurveTo(cx+50, baseY-170, cx+90, baseY);
+  ctx.fill();
+}
+
+function drawCorcovado(cx, baseY){
+  const g = ctx.createLinearGradient(cx-160,baseY-210,cx+160,baseY);
+  g.addColorStop(0, "rgba(50,30,60,.8)");
+  g.addColorStop(1, "rgba(20,15,30,.9)");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(cx-170, baseY);
+  ctx.quadraticCurveTo(cx-70, baseY-170, cx, baseY-210);
+  ctx.quadraticCurveTo(cx+80, baseY-150, cx+170, baseY);
+  ctx.fill();
+
+  const cxT = cx, cyT = baseY-210;
+  ctx.strokeStyle = "rgba(255,220,150,.8)";
+  ctx.lineWidth = 4;
+  ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(cxT-28, cyT+3); ctx.lineTo(cxT+28, cyT+3);
+  ctx.moveTo(cxT, cyT+3); ctx.lineTo(cxT, cyT+24); ctx.stroke();
+  ctx.fillStyle = "rgba(255,220,150,.8)";
+  ctx.beginPath(); ctx.arc(cxT, cyT-4, 5.5, 0, Math.PI*2); ctx.fill();
+}
+
+function drawSea(camera){
+  const top = H*0.53;
+  const seaH = H*0.14;
+  const seaGrad = ctx.createLinearGradient(0,top,0,top+seaH);
+  seaGrad.addColorStop(0, "#1c6b75");
+  seaGrad.addColorStop(1, "#0f424d");
+  ctx.fillStyle = seaGrad;
+  ctx.fillRect(0, top, W, seaH);
+
+  // Reflexo do Sol no mar (brilhante e bonito)
+  const sunX = W*0.75;
+  const reflect = ctx.createLinearGradient(0, top, 0, top+seaH);
+  reflect.addColorStop(0, "rgba(255, 200, 100, 0.4)");
+  reflect.addColorStop(1, "rgba(255, 200, 100, 0)");
+  ctx.fillStyle = reflect;
+  ctx.beginPath();
+  ctx.moveTo(sunX - 40, top); ctx.lineTo(sunX + 40, top);
+  ctx.lineTo(sunX + 100, top + seaH); ctx.lineTo(sunX - 100, top + seaH);
+  ctx.fill();
+
+  // Ondas animadas (otimizadas)
+  ctx.strokeStyle = "rgba(255,255,255,.2)";
+  ctx.lineWidth = 2;
+  for(let i=0;i<5;i++){
+    const y = top + 15 + i*12;
+    ctx.beginPath();
+    for(let x=0;x<=W;x+=30){
+      const off = (camera*0.3 + i*40 + time*20) % 50;
+      const yy = y + Math.sin((x+off)*0.04)*4;
+      x===0 ? ctx.moveTo(x,yy) : ctx.lineTo(x,yy);
+    }
+    ctx.stroke();
+  }
+
+  // Glints de sol dançando na água
+  for(let i=0;i<18;i++){
+    const gx = (sunX - 90 + (i*37 + time*60) % 220) - 110;
+    const gy = top + 8 + ((i*23) % (seaH-16));
+    const tw = Math.abs(Math.sin(time*3 + i));
+    ctx.fillStyle = `rgba(255,235,180,${(0.15+tw*0.5).toFixed(2)})`;
+    ctx.fillRect(gx, gy, 5+tw*3, 1.5);
+  }
+
+  // Espuma na linha do calçadão
+  ctx.fillStyle = "rgba(255,255,255,.25)";
+  for(let x=-((camera*0.25)%40); x<W+40; x+=40){
+    const foamH = 2 + Math.abs(Math.sin(time*2 + x*0.05))*3;
+    ctx.fillRect(x, top+seaH-foamH, 24, foamH);
+  }
+}
+
+function drawCrowd(){
+  const boardTop = H*0.53 + H*0.14;
+  const boardH = 50;
+  
+  // Calçadão estilizado
+  ctx.fillStyle = "#d1c4a9";
+  ctx.fillRect(0, boardTop, W, boardH);
+  
+  ctx.strokeStyle = "rgba(0,0,0,.15)";
+  ctx.lineWidth = 8;
+  for(let x = -((currentCamera*0.8)%60); x<W+60; x+=60){
+    ctx.beginPath(); ctx.arc(x, boardTop+boardH/2, 28, 0, Math.PI, false); ctx.stroke();
+  }
+
+  const rows = [boardTop-2, boardTop-20, boardTop-38];
+  crowd.forEach((c) => {
+    const x = (c.x * W + (currentCamera*0.2)) % (W + 100) - 50; 
+    const rowY = rows[c.row];
+    const depth = 1 - c.row*0.14; // linhas de trás um pouco menores/mais escuras
+    // Animação de pulo contínua
+    const bounce = (state==="racing") ? Math.abs(Math.sin(time*c.speed*3 + c.phase)) * 8 : 0;
+    const y = rowY - bounce;
+
+    ctx.fillStyle = `hsl(${c.hue}, 85%, ${58 - c.row*6}%)`;
+    ctx.beginPath(); ctx.ellipse(x, y, 9*depth, 14*depth, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y-18*depth, 7*depth, 0, Math.PI*2); ctx.fill();
+
+    if(c.hasFlag){
+      ctx.strokeStyle = "#8a5a2b";
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x+8, y-10); ctx.lineTo(x+8, y-35); ctx.stroke();
+      const wave = Math.sin(time*5 + x)*5;
+      ctx.fillStyle = "#009c3b"; ctx.fillRect(x+8, y-35, 16+wave, 6);
+      ctx.fillStyle = "#ffdf00"; ctx.fillRect(x+8, y-29, 16+wave, 5);
+    }
+
+    if(c.chant){
+      ctx.font = "bold 10px Poppins";
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#fff";
+      ctx.strokeStyle = "rgba(0,0,0,.7)";
+      ctx.lineWidth = 3;
+      ctx.strokeText(c.chant, x, y-45);
+      ctx.fillText(c.chant, x, y-45);
+    }
+  });
+}
+
+function drawPalms(camera, top){
+  const spacing = 300;
+  const off = (camera*0.6) % spacing;
+  for(let x = -off; x < W+100; x += spacing){
+    ctx.strokeStyle = "#4a331a";
+    ctx.lineWidth = 8;
+    ctx.beginPath(); ctx.moveTo(x, top+10); ctx.quadraticCurveTo(x-8, top-40, x+5, top-75); ctx.stroke();
+    
+    ctx.fillStyle = "#1e5c2b";
+    for(let i=0;i<6;i++){
+      const ang = (i/6)*Math.PI*2 + Math.sin(time)*0.1;
+      ctx.beginPath();
+      ctx.ellipse(x+5+Math.cos(ang)*22, top-75+Math.sin(ang)*12, 24, 8, ang, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+}
+
+function drawTrack(){
+  const top = H*0.53 + H*0.14 + 50;
+  const trackHeight = DOGS.length * 66 + 20;
+  
+  // Fundo de Areia Escura/Asfalto com leve tom quente refletido do céu
+  const trackGrad = ctx.createLinearGradient(0,top,0,top+trackHeight);
+  trackGrad.addColorStop(0, "#332a30");
+  trackGrad.addColorStop(0.5, "#221d26");
+  trackGrad.addColorStop(1, "#120f16");
+  ctx.fillStyle = trackGrad;
+  ctx.fillRect(0, top, W, trackHeight);
+
+  // Faixas alternadas por raia para dar profundidade/volume
+  for(let i=0;i<DOGS.length;i++){
+    ctx.fillStyle = i%2===0 ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.06)";
+    ctx.fillRect(0, top + i*66, W, 66);
+  }
+  
+  // Bordas da Pista com brilho
+  const railGrad = ctx.createLinearGradient(0,0,0,5);
+  ctx.fillStyle = "#ffcc00";
+  ctx.fillRect(0, top-5, W, 5);
+  ctx.fillRect(0, top+trackHeight, W, 5);
+  ctx.fillStyle = "rgba(255,235,150,.5)";
+  ctx.fillRect(0, top-5, W, 2);
+  ctx.fillRect(0, top+trackHeight, W, 2);
+  
+  // Linhas de Corrida (Tracejado que se move para dar sensação de velocidade)
+  const lineOffset = -(currentCamera % 80);
+  for(let i=1;i<DOGS.length;i++){
+    ctx.fillStyle = "rgba(255,255,255,.09)";
+    for(let j=lineOffset; j<W; j+=80) {
+       ctx.fillRect(j, top + i*66, 40, 3);
+    }
+  }
+
+  // Grão sutil na pista (textura de saibro)
+  ctx.fillStyle = "rgba(255,255,255,0.03)";
+  const grainOffset = currentCamera % 53;
+  for(let gx = -grainOffset; gx < W; gx += 53){
+    for(let gy = 0; gy < trackHeight; gy += 27){
+      if(((gx|0)+(gy|0)) % 106 < 40) ctx.fillRect(gx, top+gy, 2, 2);
+    }
+  }
+  return top;
+}
+
+function drawObstacles(camera, top){
+  obstacles.forEach(ob => {
+    const x = ob.x - camera;
+    if(x < -50 || x > W+50) return;
+    const y = top + 22 + ob.lane*66;
+    
+    // Sombra Elíptica Rápida
+    ctx.fillStyle = "rgba(0,0,0,.5)";
+    ctx.beginPath(); ctx.ellipse(x+5, y+16, 16, 7, 0, 0, Math.PI*2); ctx.fill();
+
+    // Anel de alerta sutil
+    ctx.strokeStyle = "rgba(255,180,60,.35)";
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(x, y+10, 18, 0, Math.PI*2); ctx.stroke();
+
+    const obGrad = ctx.createRadialGradient(x-4,y+5,2, x,y+10,15);
+    obGrad.addColorStop(0, "#ff9d3d");
+    obGrad.addColorStop(1, "#c9480a");
+    ctx.fillStyle = obGrad;
+    ctx.beginPath(); ctx.arc(x, y+10, 14, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 11px Poppins";
+    ctx.textAlign = "center";
+    ctx.fillText(ob.type, x, y+14);
+  });
+}
+
+function drawRacer(r, index, camera, top){
+  const x = r.distance - camera;
+  const groundY = top + 48 + index*66;
+  const isRunning = (state === "racing");
+
+  // Sombra com gradiente (mais macia que um preto chapado)
+  const shadowW = isRunning ? 28 + Math.sin(r.phase)*4 : 28;
+  const shGrad = ctx.createRadialGradient(x+3, groundY+6, 1, x+3, groundY+6, shadowW);
+  shGrad.addColorStop(0, "rgba(0,0,0,0.55)");
+  shGrad.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = shGrad;
+  ctx.beginPath();
+  ctx.ellipse(x+3, groundY+6, shadowW, 9, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // Rastro fantasma (ghost trail) quando em boost - dá sensação real de velocidade
+  if(isRunning && r.boost > 0){
+    for(let g=1; g<=3; g++){
+      ctx.globalAlpha = 0.12 * (4-g)/3;
+      drawDogModel({ ctx, cfg:r.cfg }, x - g*14, groundY, 1.1, r.phase, isRunning);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Aura de boost (glow quente atrás do cachorro)
+  if(r.boost > 0){
+    const auraGrad = ctx.createRadialGradient(x-18,groundY-20,2, x-18,groundY-20,40);
+    auraGrad.addColorStop(0, "rgba(255,200,80,0.35)");
+    auraGrad.addColorStop(1, "rgba(255,200,80,0)");
+    ctx.fillStyle = auraGrad;
+    ctx.beginPath(); ctx.arc(x-18, groundY-20, 40, 0, Math.PI*2); ctx.fill();
+  }
+
+  // Speedlines (Linhas de Vento no Boost)
+  if(r.boost > 0){
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    for(let i=1;i<=4;i++){
+       const lineX = x - 20 - i*20 - Math.random()*10;
+       const lineY = groundY - 15 - (i%2===0?10:-5);
+       ctx.beginPath();
+       ctx.moveTo(lineX, lineY);
+       ctx.lineTo(lineX + 30, lineY);
+       ctx.stroke();
+    }
+  }
+
+  // Marcador de aposta visual (Seta estilizada)
+  if(r.id === selected.id){
+    const bounceY = isRunning ? Math.sin(time*10)*5 : Math.sin(time*3)*5;
+    ctx.fillStyle = "#ffcc00";
+    ctx.beginPath();
+    ctx.moveTo(x+2, groundY-60 + bounceY);
+    ctx.lineTo(x-8, groundY-75 + bounceY);
+    ctx.lineTo(x+12, groundY-75 + bounceY);
+    ctx.fill();
+  }
+
+  drawDogModel({ ctx, cfg:r.cfg }, x, groundY, 1.1, r.phase, isRunning);
+
+  // Nome do Cachorro com stroke de alta performance
+  ctx.font = "bold 13px Poppins";
+  ctx.textAlign = "center";
+  ctx.lineJoin = "round";
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = "#000";
+  ctx.strokeText(r.name, x, groundY-65);
+  ctx.fillStyle = "#fff";
+  ctx.fillText(r.name, x, groundY-65);
+}
+
+function drawPostProcessing(){
+  // Leve "bloom" global vindo da direção do sol para unificar a iluminação da cena
+  const bloom = ctx.createRadialGradient(W*0.75, H*0.35, 0, W*0.75, H*0.35, W*0.6);
+  bloom.addColorStop(0, "rgba(255,190,110,0.10)");
+  bloom.addColorStop(1, "rgba(255,190,110,0)");
+  ctx.fillStyle = bloom;
+  ctx.fillRect(0,0,W,H);
+
+  // Vinheta (Escurece as bordas para focar a visão) + Filtro quente de fim de tarde
+  const grad = ctx.createRadialGradient(W/2, H/2, H*0.4, W/2, H/2, W);
+  grad.addColorStop(0, "rgba(255, 120, 0, 0.0)");
+  grad.addColorStop(1, "rgba(10, 0, 20, 0.45)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Grão de filme cinematográfico muito sutil (poucos pontos, barato)
+  ctx.fillStyle = "rgba(255,255,255,0.025)";
+  for(let i=0;i<40;i++){
+    const gx = (i*137 + time*400) % W;
+    const gy = (i*281 + time*97) % H;
+    ctx.fillRect(gx, gy, 1.5, 1.5);
+  }
+}
+
+function draw(){
+  ctx.save();
+  if(shake > 0){
+    ctx.translate((Math.random()-0.5)*shake*12, (Math.random()-0.5)*shake*12);
+  }
+
+  // Limpeza de tela base
+  ctx.fillStyle = "#191d47"; 
+  ctx.fillRect(0, 0, W, H);
+
+  drawSky(currentCamera);
+  drawMountains(currentCamera);
+  drawSea(currentCamera);
+  drawCrowd();
+  const top = drawTrack();
+  drawPalms(currentCamera, top);
+  drawObstacles(currentCamera, top);
+  
+  // Ordenar racers pelo Y (lane) para desenhar na ordem certa
+  racers.slice().sort((a,b)=>a.lane-b.lane).forEach((r) => drawRacer(r, r.lane, currentCamera, top));
+
+  // Linha de Chegada
+  const finishX = TRACK_LEN - currentCamera;
+  if(finishX > -50 && finishX < W+50){
+    const trackHeight = DOGS.length*66 + 20;
+    for(let i=0;i<trackHeight;i+=16){
+      ctx.fillStyle = (Math.floor(i/16)%2===0) ? "#111" : "#fff";
+      ctx.fillRect(finishX, top+i, 14, 16);
+    }
+  }
+
+  // Renderizar Partículas de Poeira
+  particles.forEach(p => {
+    ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+    ctx.fillStyle = p.color + `${ctx.globalAlpha})`; 
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+
+  // Renderizar Confetes (com variação de formas: retângulo, fita e círculo)
+  confetti.forEach(c => {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, Math.min(1, c.life));
+    ctx.translate(c.x, c.y);
+    ctx.rotate(c.rot);
+    ctx.fillStyle = c.color;
+    if(c.shape === "circle"){
+      ctx.beginPath(); ctx.arc(0,0,c.size*0.45,0,Math.PI*2); ctx.fill();
+    } else if(c.shape === "ribbon"){
+      ctx.fillRect(-c.size*0.15, -c.size*0.9, c.size*0.3, c.size*1.8);
+    } else {
+      ctx.fillRect(-c.size/2, -c.size/2, c.size, c.size*0.7);
+    }
+    ctx.restore();
+  });
+  ctx.globalAlpha = 1;
+
+  drawPostProcessing();
+
+  ctx.restore();
+}
+
+/* =========================================================
+   LOOP PRINCIPAL
+========================================================= */
+let last = performance.now();
+function loop(now){
+  const dt = Math.min(0.05, (now-last)/1000);
+  last = now;
+
+  particles.forEach(p => { 
+    p.x += p.vx*dt; 
+    p.y += p.vy*dt; 
+    p.life -= dt; 
+    p.size += dt*15; // Poeira espalha
+  });
+  particles = particles.filter(p => p.life > 0);
+
+  confetti.forEach(c => { c.x+=c.vx*dt; c.vy+=c.g*dt; c.y+=c.vy*dt; c.rot+=c.vr*dt; c.life-=dt*0.7; });
+  confetti = confetti.filter(c => c.life > 0 && c.y < H+50);
+
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+
+buildDogs();
+updateUI();
+requestAnimationFrame(loop);
+
+</script>
+</body>
+</html>

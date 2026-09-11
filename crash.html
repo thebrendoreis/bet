@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Royal Sperm — Slow Motion & Auto Crash Explosion</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #000000; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #fff; }
+
+  #game { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
+
+  .hud {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 12px;
+    pointer-events: none;
+  }
+
+  .interactive { pointer-events: auto; }
+
+  .panel {
+    background: rgba(12, 10, 5, 0.85);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8), 0 0 15px rgba(212, 175, 55, 0.1);
+  }
+
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    gap: 12px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 900;
+    font-size: 1.1rem;
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, #fff2a3, #d4af37, #aa7c11);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .logo-icon {
+    width: 34px;
+    height: 34px;
+    background: linear-gradient(135deg, #ffd700, #996515);
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 16px;
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.5);
+    -webkit-text-fill-color: initial;
+  }
+
+  .top-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .live-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(212, 175, 55, 0.08);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #ffd700;
+  }
+  .live-dot {
+    width: 6px;
+    height: 6px;
+    background: #ffd700;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #ffd700;
+  }
+
+  .balance-box {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  .balance-box label { font-size: 0.65rem; color: #a3946d; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+  .balance-box span { font-size: 1.05rem; font-weight: 900; color: #ffd700; text-shadow: 0 0 10px rgba(212, 175, 55, 0.3); }
+
+  .center-display {
+    position: absolute;
+    top: 22%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    pointer-events: none;
+  }
+
+  .multiplier {
+    font-size: clamp(3.2rem, 8vw, 5.8rem);
+    font-weight: 900;
+    line-height: 1;
+    background: linear-gradient(180deg, #ffffff 0%, #ffe680 50%, #d4af37 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.4));
+    transition: all 0.2s;
+  }
+  .multiplier.hot {
+    background: linear-gradient(180deg, #ffffff 0%, #fff2a3 40%, #ffa500 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 30px rgba(255, 165, 0, 0.6));
+  }
+  .multiplier.win {
+    background: linear-gradient(180deg, #b3ffcc 0%, #00ff66 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 30px rgba(0, 255, 102, 0.8));
+  }
+  .multiplier.crash {
+    background: linear-gradient(180deg, #ff8080 0%, #ff1a1a 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 30px rgba(255, 0, 0, 0.8));
+  }
+
+  .status-tag {
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 20px;
+    background: rgba(15, 12, 5, 0.8);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    color: #e6c667;
+  }
+
+  .middle-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex: 1;
+    margin-top: 10px;
+    pointer-events: none;
+  }
+
+  .sidebar {
+    width: 220px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-height: calc(100vh - 240px);
+    overflow: hidden;
+  }
+
+  .sidebar-section h4 {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #a3946d;
+    margin-bottom: 8px;
+  }
+
+  .history-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .history-item {
+    background: rgba(212, 175, 55, 0.05);
+    border: 1px solid rgba(212, 175, 55, 0.15);
+    padding: 6px 0;
+    text-align: center;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #c5b382;
+  }
+  .history-item.high { color: #ffd700; border-color: rgba(212, 175, 55, 0.5); background: rgba(212, 175, 55, 0.18); }
+
+  .player-list { display: flex; flex-direction: column; gap: 6px; }
+  .player-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.08);
+  }
+  .player-name { color: #d4c59e; font-weight: 600; }
+  .player-val { color: #ffd700; font-weight: 800; }
+
+  .bottom-controls {
+    width: 100%;
+    max-width: 850px;
+    margin: 0 auto;
+    padding: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1.2fr;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .control-group { display: flex; flex-direction: column; gap: 6px; }
+  .control-group label { font-size: 0.65rem; text-transform: uppercase; font-weight: 800; color: #a3946d; letter-spacing: 1px; }
+
+  .input-wrapper {
+    height: 48px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: #fff2a3;
+  }
+
+  .input-wrapper input {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: #fff2a3;
+    font-family: inherit;
+  }
+
+  .btn-group { display: flex; gap: 4px; }
+  .btn-quick {
+    flex: 1;
+    background: rgba(212, 175, 55, 0.08);
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    color: #e6c667;
+    padding: 0.6rem 0.2rem;
+    font-size: 0.65rem;
+    font-weight: 800;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-quick:hover { background: rgba(212, 175, 55, 0.25); color: #ffd700; }
+
+  .btn-action {
+    height: 68px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #fff2a3 0%, #d4af37 50%, #996515 100%);
+    color: #0d0a00;
+    font-size: 1.15rem;
+    font-weight: 950;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.3);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 1rem;
+    width: 100%;
+  }
+  .btn-action:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(212, 175, 55, 0.5); }
+  .btn-action:active { transform: translateY(0); }
+  .btn-action:disabled {
+    background: #333333;
+    color: #777777;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+  }
+  .btn-action.cashout {
+    background: linear-gradient(135deg, #67f3b0 0%, #00b359 100%);
+    color: #022011;
+    box-shadow: 0 6px 20px rgba(0, 255, 136, 0.3);
+  }
+
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .bottom-controls { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .btn-action-container { grid-column: 1 / -1; }
+    .btn-action { height: 52px; font-size: 1rem; }
+    .top-bar { padding: 8px 12px; }
+    .logo span { display: none; }
+    .center-display { top: 25%; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="game"></canvas>
+
+<div class="hud">
+  <header class="top-bar panel interactive">
+    <div class="logo">
+      <div class="logo-icon">🧬</div>
+      <span>ROYAL SPERM</span>
+    </div>
+    <div class="top-right">
+      <div class="live-badge"><div class="live-dot"></div>AO VIVO</div>
+      <div class="balance-box">
+        <label>Saldo</label>
+        <span id="balance">R$ 1.000,00</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="center-display">
+    <div class="multiplier" id="mult">1.00×</div>
+    <div class="status-tag" id="status">Aguardando Aposta</div>
+  </div>
+
+  <div class="middle-container">
+    <aside class="sidebar panel interactive">
+      <div class="sidebar-section">
+        <h4>Histórico Recente</h4>
+        <div class="history-grid" id="historyGrid">
+          <div class="history-item">1.02×</div>
+          <div class="history-item">1.15×</div>
+          <div class="history-item">1.00×</div>
+          <div class="history-item high">2.05×</div>
+          <div class="history-item">1.08×</div>
+          <div class="history-item">1.33×</div>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <h4>Apostas ao vivo</h4>
+        <div class="player-list">
+          <div class="player-row"><span class="player-name">Lucas***</span><span class="player-val">R$ 150</span></div>
+          <div class="player-row"><span class="player-name">Mateus***</span><span class="player-val">R$ 50</span></div>
+          <div class="player-row"><span class="player-name">Fernanda***</span><span class="player-val">R$ 300</span></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="bottom-controls panel interactive">
+    <div class="control-group">
+      <label>Valor da Aposta</label>
+      <div class="input-wrapper" id="bet">R$ 10,00</div>
+      <div class="btn-group">
+        <button class="btn-quick" onclick="setBet(10)">10</button>
+        <button class="btn-quick" onclick="setBet(50)">50</button>
+        <button class="btn-quick" onclick="setBet(100)">100</button>
+        <button class="btn-quick" onclick="setBet(500)">500</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label>Auto Cashout (×)</label>
+      <div class="input-wrapper">
+        <input type="number" id="autoCashout" value="1.50" step="0.05" min="1.01">
+      </div>
+      <div class="btn-group">
+        <button class="btn-quick" onclick="setAutoCashout(1.2)">1.2×</button>
+        <button class="btn-quick" onclick="setAutoCashout(1.5)">1.5×</button>
+        <button class="btn-quick" onclick="setAutoCashout(2.0)">2.0×</button>
+        <button class="btn-quick" onclick="setAutoCashout(5.0)">5.0×</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label>Retorno Estimado</label>
+      <div class="input-wrapper" id="return">R$ 10,00</div>
+      <div class="btn-group">
+        <button class="btn-quick" onclick="setBet(balance)">MAX</button>
+      </div>
+    </div>
+
+    <div class="btn-action-container">
+      <button class="btn-action" id="action">APOSTAR</button>
+    </div>
+  </footer>
+</div>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+let state = 'waiting'; 
+let multiplier = 1.00;
+let bet = 10;
+let balance = 1000;
+let flightTime = 0;
+let lastTime = performance.now();
+let exploded = false;
+let crashAt = 1.0;
+let isCooldown = false;
+let autoCashoutVal = 1.50;
+
+// SISTEMA DE EXPLOSÃO
+let particles = [];
+let trailPts = [];
+let shockwaves = [];
+let shakeTime = 0;
+let shakeIntensity = 0;
+
+const sperm = { x: 0, y: 0, angle: 0 };
+
+const $ = id => document.getElementById(id);
+
+function formatMoney(v) {
+  return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function setBet(v) {
+  if (state !== 'waiting' || isCooldown) return;
+  bet = Math.min(Math.max(1, v), balance);
+  if (balance <= 0) bet = 0;
+  $('bet').textContent = formatMoney(bet);
+  $('return').textContent = formatMoney(bet * multiplier);
+}
+
+function setAutoCashout(val) {
+  if (state !== 'waiting') return;
+  autoCashoutVal = parseFloat(val);
+  $('autoCashout').value = autoCashoutVal.toFixed(2);
+}
+
+$('autoCashout').addEventListener('change', (e) => {
+  let val = parseFloat(e.target.value);
+  if (isNaN(val) || val < 1.01) val = 1.01;
+  autoCashoutVal = val;
+  e.target.value = val.toFixed(2);
+});
+
+function startCooldown() {
+  isCooldown = true;
+  let secondsLeft = 4;
+  $('action').disabled = true;
+  $('action').textContent = `AGUARDE (${secondsLeft}s)`;
+  
+  const interval = setInterval(() => {
+    secondsLeft--;
+    if (secondsLeft > 0) {
+      $('action').textContent = `AGUARDE (${secondsLeft}s)`;
+    } else {
+      clearInterval(interval);
+      isCooldown = false;
+      $('action').disabled = false;
+      $('action').textContent = 'APOSTAR';
+      $('status').textContent = 'Aguardando Aposta';
+    }
+  }, 1000);
+}
+
+function cashOut(isAuto = false) {
+  const win = bet * multiplier;
+  balance += win;
+  $('balance').textContent = formatMoney(balance);
+  state = 'waiting';
+  
+  if (isAuto) {
+    triggerExplosion(true);
+  } else {
+    $('status').textContent = 'RETIRADO COM SUCESSO!';
+    $('action').classList.remove('cashout');
+    startCooldown();
+  }
+}
+
+$('action').onclick = () => {
+  if (isCooldown) return;
+
+  if (state === 'waiting' || state === 'crashed') {
+    if (balance < bet || bet <= 0) return;
+    balance -= bet;
+    $('balance').textContent = formatMoney(balance);
+    startRound();
+  } else if (state === 'running') {
+    cashOut(false);
+  }
+};
+
+function generateHardCrashPoint() {
+  const rand = Math.random();
+  if (rand < 0.05) return 1.00;
+  const e = 0.96;
+  const crash = e / (1 - rand);
+  return Math.max(1.00, Math.min(crash, 25.00));
+}
+
+function startRound() {
+  state = 'running';
+  exploded = false;
+  flightTime = 0;
+  multiplier = 1.00;
+  sperm.x = canvas.width * 0.15;
+  sperm.y = canvas.height * 0.6;
+  sperm.angle = 0;
+  trailPts = [];
+  particles = [];
+  shockwaves = [];
+
+  $('mult').textContent = '1.00×';
+  $('mult').className = 'multiplier';
+  $('status').textContent = 'EM NADO...';
+  $('action').textContent = 'RETIRAR';
+  $('action').classList.add('cashout');
+
+  crashAt = generateHardCrashPoint();
+
+  if (crashAt <= 1.00) {
+    triggerExplosion(false);
+  }
+}
+
+function triggerExplosion(isWin = false) {
+  if (exploded) return;
+  exploded = true;
+  state = 'crashed';
+  
+  if (isWin) {
+    $('status').textContent = `AUTO CASHOUT (${multiplier.toFixed(2)}×)!`;
+    $('mult').textContent = multiplier.toFixed(2) + '×';
+    $('mult').className = 'multiplier win';
+  } else {
+    $('status').textContent = 'EXPLODIU!';
+    $('mult').textContent = multiplier.toFixed(2) + '×';
+    $('mult').className = 'multiplier crash';
+  }
+
+  $('action').classList.remove('cashout');
+
+  // TREMOR DE TELA
+  shakeTime = 0.4; 
+  shakeIntensity = 18;
+
+  // ONDAS DE CHOQUE (SHOCKWAVES)
+  shockwaves.push({
+    x: sperm.x,
+    y: sperm.y,
+    radius: 10,
+    maxRadius: 180,
+    alpha: 1,
+    color: isWin ? '#00ff66' : '#ffffff'
+  });
+  shockwaves.push({
+    x: sperm.x,
+    y: sperm.y,
+    radius: 5,
+    maxRadius: 120,
+    alpha: 1,
+    color: isWin ? '#b3ffcc' : '#ffd700'
+  });
+
+  // CRIAR PARTÍCULAS DE EXPLOSÃO
+  for (let i = 0; i < 120; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = Math.random() * 22 + 4;
+    particles.push({
+      x: sperm.x,
+      y: sperm.y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      size: Math.random() * 6 + 2,
+      color: isWin ? (Math.random() > 0.3 ? '#00ff66' : '#ffffff') : (Math.random() > 0.3 ? '#ffffff' : '#ffd700'),
+      alpha: 1,
+      decay: Math.random() * 0.02 + 0.01,
+      gravity: 0.15
+    });
+  }
+
+  startCooldown();
+}
+
+function drawSperm(x, y, angle, time) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  for (let i = 0; i <= 40; i += 2) {
+    const tx = -i * 2.8;
+    const ty = Math.sin(time * 20 - i * 0.35) * (6 + i * 0.25);
+    ctx.lineTo(tx, ty);
+  }
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+  ctx.lineWidth = 3.5;
+  ctx.lineCap = 'round';
+  ctx.shadowColor = '#ffffff';
+  ctx.shadowBlur = 15;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 20, 13, 0, 0, Math.PI * 2);
+  
+  const headGrad = ctx.createRadialGradient(-3, -3, 1, 0, 0, 20);
+  headGrad.addColorStop(0, '#ffffff');
+  headGrad.addColorStop(0.7, '#f5f5f5');
+  headGrad.addColorStop(1, '#dcdcdc');
+
+  ctx.fillStyle = headGrad;
+  ctx.shadowColor = '#ffffff';
+  ctx.shadowBlur = 30;
+  ctx.fill();
+
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = '#ffffff';
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.ellipse(4, 0, 7, 5, 0, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowBlur = 12;
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function render(timestamp) {
+  requestAnimationFrame(render);
+  const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+  lastTime = timestamp;
+
+  ctx.save();
+
+  // TREMOR DE TELA
+  if (shakeTime > 0) {
+    shakeTime -= dt;
+    const offsetX = (Math.random() - 0.5) * shakeIntensity;
+    const offsetY = (Math.random() - 0.5) * shakeIntensity;
+    ctx.translate(offsetX, offsetY);
+  }
+
+  ctx.fillStyle = '#050402';
+  ctx.fillRect(-20, -20, canvas.width + 40, canvas.height + 40);
+
+  // PARTICULAS DE FUNDO
+  ctx.fillStyle = 'rgba(212, 175, 55, 0.25)';
+  for (let i = 0; i < 45; i++) {
+    let px = (i * 123.4 + timestamp * 0.01 * ((i % 3) + 1)) % canvas.width;
+    let py = (i * 87.6 + Math.sin(timestamp * 0.0005 + i) * 20) % canvas.height;
+    ctx.fillRect(px, py, 1.5, 1.5);
+  }
+
+  if (state === 'running') {
+    flightTime += dt;
+
+    // RITMO DA SUBIDA AJUSTADO PARA SER MAIS LENTO (0.2 em vez de 0.45)
+    multiplier = Math.pow(Math.E, flightTime * 0.20);
+
+    $('return').textContent = formatMoney(bet * multiplier);
+    $('mult').textContent = multiplier.toFixed(2) + '×';
+    
+    if (multiplier > 2.5) $('mult').classList.add('hot');
+
+    // DESLOCAMENTO LENTO DO NADO
+    const targetX = canvas.width * 0.15 + (flightTime * 50);
+    sperm.x = Math.min(targetX, canvas.width * 0.8);
+    sperm.y = (canvas.height * 0.55) + Math.sin(flightTime * 3) * 30;
+    sperm.angle = Math.cos(flightTime * 3) * 0.12;
+
+    if (autoCashoutVal > 1.00 && multiplier >= autoCashoutVal) {
+      multiplier = autoCashoutVal;
+      cashOut(true);
+      ctx.restore();
+      return;
+    }
+
+    if (multiplier >= crashAt) {
+      triggerExplosion(false);
+    }
+  } else if (state === 'waiting') {
+    sperm.x = canvas.width * 0.15;
+    sperm.y = canvas.height * 0.55 + Math.sin(timestamp * 0.002) * 10;
+    sperm.angle = Math.sin(timestamp * 0.001) * 0.05;
+  }
+
+  if (state === 'running') {
+    trailPts.push({ x: sperm.x, y: sperm.y });
+    if (trailPts.length > 45) trailPts.shift();
+
+    ctx.beginPath();
+    for (let i = 0; i < trailPts.length; i++) {
+      const p = trailPts[i];
+      if (i === 0) ctx.moveTo(p.x, p.y);
+      else ctx.lineTo(p.x, p.y);
+    }
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+
+  if (!exploded) {
+    drawSperm(sperm.x, sperm.y, sperm.angle, timestamp * 0.003);
+  }
+
+  // ANIMAÇÃO DAS ONDAS DE CHOQUE (EXPANSÃO)
+  shockwaves.forEach((sw, idx) => {
+    sw.radius += (sw.maxRadius - sw.radius) * 0.12;
+    sw.alpha -= 0.03;
+
+    if (sw.alpha > 0) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+      ctx.strokeStyle = sw.color;
+      ctx.lineWidth = 4 * sw.alpha;
+      ctx.globalAlpha = sw.alpha;
+      ctx.shadowColor = sw.color;
+      ctx.shadowBlur = 20;
+      ctx.stroke();
+      ctx.restore();
+    } else {
+      shockwaves.splice(idx, 1);
+    }
+  });
+
+  // ANIMAÇÃO DE EXPLOSÃO DAS PARTÍCULAS
+  if (exploded) {
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += p.gravity;
+      p.alpha -= p.decay;
+
+      if (p.alpha > 0) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.alpha);
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    });
+  }
+
+  ctx.restore();
+}
+
+requestAnimationFrame(render);
+</script>
+</body>
+</html>
